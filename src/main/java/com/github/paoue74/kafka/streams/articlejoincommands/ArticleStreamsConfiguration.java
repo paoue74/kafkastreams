@@ -20,10 +20,12 @@ import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.kafka.annotation.KafkaStreamsDefaultConfiguration;
 import org.springframework.kafka.config.KafkaStreamsConfiguration;
+import org.springframework.kafka.config.StreamsBuilderFactoryBean;
 import org.springframework.kafka.config.StreamsBuilderFactoryBeanCustomizer;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
@@ -52,6 +54,12 @@ public class ArticleStreamsConfiguration {
     return new KafkaStreamsConfiguration(props);
   }
 
+//  @Primary
+//  @Bean
+//  public StreamsBuilderFactoryBean articlesKStreamBuilder(KafkaStreamsConfiguration streamsConfig) {
+//    return new StreamsBuilderFactoryBean(streamsConfig);
+//  }
+
   @Bean
   public StreamsBuilderFactoryBeanCustomizer customizer() {
     return fb -> fb.setStateListener((newState, oldState) -> {
@@ -60,9 +68,9 @@ public class ArticleStreamsConfiguration {
   }
 
   @Bean
-  public KStream<String, EnrichedArticle> kStream(StreamsBuilder kStreamBuilder) {
-    KStream<String, Order> orderStream = kStreamBuilder.stream("orders-topic", Consumed.with(Serdes.String(), new JsonSerde<>(Order.class)));
-    KTable<String, Article> articlesTable = kStreamBuilder.table("articles-topic", Consumed.with(Serdes.String(), new JsonSerde<>(Article.class)));
+  public KStream<String, EnrichedArticle> kStream(StreamsBuilder articlesKStreamBuilder) {
+    KStream<String, Order> orderStream = articlesKStreamBuilder.stream("orders-topic", Consumed.with(Serdes.String(), new JsonSerde<>(Order.class)));
+    KTable<String, Article> articlesTable = articlesKStreamBuilder.table("articles-topic", Consumed.with(Serdes.String(), new JsonSerde<>(Article.class)));
 
     KStream<String, EnrichedArticle> enrichedArticleKStream = orderStream
         .filter((s, order) -> !order.getUserId().isBlank())
@@ -124,7 +132,7 @@ public class ArticleStreamsConfiguration {
   @NoArgsConstructor
   @AllArgsConstructor(access = AccessLevel.PRIVATE)
   @With
-  private static class EnrichedArticle {
+  public static class EnrichedArticle {
     private String articleId;
     private String name;
     private String description;
